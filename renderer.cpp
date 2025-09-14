@@ -18,7 +18,7 @@
 
 
 constexpr float PI                      = 3.14159265359f;
-constexpr size_t MAX_RAYCAST_DEPTH      = 16;                               //Alcance máximo do raio sem bater em nada
+constexpr size_t MAX_RAYCAST_DEPTH      = 64;                               //Alcance máximo do raio sem bater em nada
 constexpr size_t MAX_RAYCASTING_STEPS   = 64;                               //Aqui o raio não vai atravessar mais que 64 células no grid
 constexpr float PLAYER_FOV              = 60.0f;                            //Campo de visão do jogador
 constexpr size_t NUM_RAYS               = 600;                              //Número de raios lançados
@@ -26,6 +26,7 @@ constexpr float COLUMN_WIDTH            = SCREEN_W / (float) NUM_RAYS;
 
 struct Ray {
     sf::Vector2f hitPosition;
+    sf::Vector2u mapPosition;
     float distance;
     bool hit;
     bool isHitVertical;
@@ -75,7 +76,10 @@ void Renderer::draw3dView(sf::RenderTarget &target, const Player &player, const 
 
             sf::RectangleShape column(sf::Vector2f(COLUMN_WIDTH, wallHeight));
             column.setPosition(i * COLUMN_WIDTH,  wallOffset);
-            column.setFillColor(sf::Color(255 * shade, 255 * shade, 255 * shade));
+
+            sf::Color color = map.getGrid()[ray.mapPosition.y][ray.mapPosition.x];
+            column.setFillColor(
+                sf::Color(color.r * shade, color.g * shade, color.b * shade));
             target.draw(column);
         }
     }
@@ -110,8 +114,11 @@ Ray castRay(sf::Vector2f start, float angleInDegrees, const Map &map) {
     float vdist = std::numeric_limits<float>::max();
     float hdist = std::numeric_limits<float>::max();
 
-    // *********************** Calculando interseções verticais ************************
+    sf::Vector2u vMapPos, hMapPos;
     sf::Vector2f vRayPos, hRayPos, offset;
+
+    // *********************** Calculando interseções verticais ************************
+
     if (std::cos(angle) > 0.001f) {                                                          //O jogador está olhando para baixo no sistema de coordenadas de tela
         vRayPos.x = std::floor(start.x / cellSize) * cellSize + cellSize;
         vRayPos.y = (start.x - vRayPos.x) * vTan + start.y;                                  //eq. da reta dado y conhecido
@@ -138,13 +145,15 @@ Ray castRay(sf::Vector2f start, float angleInDegrees, const Map &map) {
         int mapX = (int)(vRayPos.x / cellSize);
         int mapY = (int)(vRayPos.y / cellSize);
 
-        if (mapY < grid.size() && mapX < grid[mapY].size() && grid[mapY][mapX]) {
+        if (mapY < grid.size() && mapX < grid[mapY].size() &&
+            grid[mapY][mapX] != sf::Color::Black) {
             hit = true;
             //Calcula a distancia vertical entre a posição do jogador e a posição do raio
             vdist = std::sqrt(
             (vRayPos.x - start.x) * (vRayPos.x - start.x)
             + (vRayPos.y - start.y) * (vRayPos.y - start.y)
             );
+            vMapPos = sf::Vector2u(mapX,mapY);
             break;
         }
 
@@ -176,19 +185,24 @@ Ray castRay(sf::Vector2f start, float angleInDegrees, const Map &map) {
         int mapX = (int)(hRayPos.x / cellSize);
         int mapY = (int)(hRayPos.y / cellSize);
 
-        if (mapY < grid.size() && mapX < grid[mapY].size() && grid[mapY][mapX]) {
+        if (mapY < grid.size() && mapX < grid[mapY].size() &&
+            grid[mapY][mapX] != sf::Color::Black) {
             hit = true;
             //Calcula a distancia horizontal entre a posição do jogador e a posição do raio
             hdist = std::sqrt(
             (hRayPos.x - start.x) * (hRayPos.x - start.x)
             + (hRayPos.y - start.y) * (hRayPos.y - start.y)
             );
+            hMapPos = sf::Vector2u(mapX,mapY);
             break;
         }
 
         hRayPos += offset;
     }
-    return Ray {hdist < vdist ? hRayPos : vRayPos, std::min(hdist,vdist), hit,
-        vdist < hdist
+    return Ray {
+        hdist < vdist ? hRayPos : vRayPos,
+        hdist < vdist ? hMapPos : vMapPos, std::min(hdist, vdist), hit,
+        vdist <= hdist
     };
-}
+};
+

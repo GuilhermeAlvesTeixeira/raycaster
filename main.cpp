@@ -10,24 +10,9 @@ int main() {
     sf::RenderWindow window(sf::VideoMode(SCREEN_W,SCREEN_H), "Raycaster",
         sf::Style::Close | sf::Style::Titlebar);
 
-    std::vector<std::vector<int>> grid = {
-        {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
-        {1, 0, 0, 0, 1, 0 ,0 ,0 ,0, 0, 0 ,1},
-        {1, 0, 1, 0, 1, 0, 1, 1, 1, 1, 0, 1},
-        {1, 0, 1, 0, 0, 0, 1, 0, 0, 1, 0, 1},
-        {1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1},
-        {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 1},
-        {1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1},
-        {1, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 1},
-        {1, 0, 1, 1, 1, 0, 0, 0, 0, 1, 0, 1},
-        {1, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 1},
-        {1, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 1},
-        {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
-    };
-
     float cellSize = 48.0f;                         //Tamanho da célula
 
-    Map map(cellSize, grid);                     //Mapa
+    Map map(cellSize, "../map.png");     //Mapa
     sf::Clock gameClock;                            //gameClock
     Player player;                                  //jogador
     player.position = sf::Vector2f(96,96);
