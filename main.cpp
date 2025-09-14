@@ -30,7 +30,7 @@ int main() {
     Map map(cellSize, grid);                     //Mapa
     sf::Clock gameClock;                            //gameClock
     Player player;                                  //jogador
-    player.position = sf::Vector2f(50,50);
+    player.position = sf::Vector2f(96,96);
     Renderer renderer;
 
     /***************************************************************************/

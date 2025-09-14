@@ -10,15 +10,19 @@
 #include <SFML/Graphics/PrimitiveType.hpp>
 #include <SFML/Graphics/Vertex.hpp>
 #include <SFML/System/Vector2.hpp>
+#include <SFML/Graphics/RectangleShape.hpp>
 
 #include <cmath>
 #include <iostream>
 #include <limits>
 
-constexpr float PI = 3.14159265359f;
-constexpr size_t MAX_RAYCAST_DEPTH = 16;    //Alcance máximo do raio sem bater em nada
-constexpr size_t MAX_RAYCASTING_STEPS = 64; //Aqui o raio não vai atravessar mais que 64 células no grid
-constexpr float PLAYER_FOV = 60.0f;         //Campo de visão do jogador
+
+constexpr float PI                      = 3.14159265359f;
+constexpr size_t MAX_RAYCAST_DEPTH      = 16;                               //Alcance máximo do raio sem bater em nada
+constexpr size_t MAX_RAYCASTING_STEPS   = 64;                               //Aqui o raio não vai atravessar mais que 64 células no grid
+constexpr float PLAYER_FOV              = 60.0f;                            //Campo de visão do jogador
+constexpr size_t NUM_RAYS               = 120;                              //Número de raios lançados
+constexpr float COLUMN_WIDTH            = SCREEN_W / (float) NUM_RAYS;
 
 struct Ray {
     sf::Vector2f hitPosition;
@@ -30,11 +34,24 @@ static Ray castRay(sf::Vector2f start, float angleInDegrees, const Map &map);
 
 void Renderer::draw3dView(sf::RenderTarget &target, const Player &player, const Map &map) {
 
-    for (float angle = player.angle - PLAYER_FOV/2.0f; angle < player.angle + PLAYER_FOV; angle += 1.0f) {
+    float angle = player.angle - PLAYER_FOV / 2.0f;
+    float angleIncrement = PLAYER_FOV / (float) NUM_RAYS;
+
+    for (size_t i = 0; i < NUM_RAYS; i++, angle += angleIncrement) {
         Ray ray = castRay(player.position, angle, map);
 
         if (ray.hit) {
+            float wallHeight = (map.getCellSize() * SCREEN_H) / ray.distance;
 
+            if (wallHeight > SCREEN_H) {
+                wallHeight = SCREEN_H;
+            }
+
+            float wallOffset = SCREEN_H / 2.0f - wallHeight / 2.0f;
+
+            sf::RectangleShape column(sf::Vector2f(COLUMN_WIDTH, wallHeight));
+            column.setPosition(i * COLUMN_WIDTH,  wallOffset);
+            target.draw(column);
         }
     }
 }
