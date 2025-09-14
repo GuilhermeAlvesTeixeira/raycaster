@@ -35,6 +35,16 @@ static Ray castRay(sf::Vector2f start, float angleInDegrees, const Map &map);
 
 void Renderer::draw3dView(sf::RenderTarget &target, const Player &player, const Map &map) {
 
+    //Céu
+    sf::RectangleShape rectangle(sf::Vector2f(SCREEN_W, SCREEN_H /2.0f));
+    rectangle.setFillColor(sf::Color(250,170,100));
+    target.draw(rectangle);
+
+    //Chão
+    rectangle.setPosition(0.0f, SCREEN_H /2.0f);
+    rectangle.setFillColor(sf::Color(70,70,70));
+    target.draw(rectangle);
+
     float angle = player.angle - PLAYER_FOV / 2.0f;
     float angleIncrement = PLAYER_FOV / (float) NUM_RAYS;
     float maxRenderDistance = MAX_RAYCAST_DEPTH * map.getCellSize();
