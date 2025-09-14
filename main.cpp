@@ -7,7 +7,8 @@
 #include "renderer.h"
 
 int main() {
-    sf::RenderWindow window(sf::VideoMode(1200,675), "Raycaster");
+    sf::RenderWindow window(sf::VideoMode(SCREEN_W,SCREEN_H), "Raycaster",
+        sf::Style::Close | sf::Style::Titlebar);
 
     std::vector<std::vector<int>> grid = {
         {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
@@ -45,9 +46,14 @@ int main() {
 
         player.update(deltaTime);                           //atualiza estados do jogador
         window.clear();
-        map.draw(window);
-        player.draw(window);                             //Desenha jogador
-        renderer.drawRays(window, player, map);          //Desenha raios
+
+        /* Minimapa */
+        //map.draw(window);                                 //Desenha Mapa
+        //player.draw(window);                              //Desenha jogador
+        //renderer.drawRays(window, player, map);           //Desenha raios
+
+        /* cena "3d" */
+        renderer.draw3dView(window,player,map);
         window.display();
     }
 }
