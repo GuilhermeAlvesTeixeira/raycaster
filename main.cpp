@@ -3,6 +3,7 @@
 #include <SFML/Window/VideoMode.hpp>
 
 #include "map.h"
+#include "player.h"
 
 int main() {
     sf::RenderWindow window(sf::VideoMode(1200,675), "Raycaster");
@@ -22,9 +23,13 @@ int main() {
         {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
     };
 
-    Map map(48.0f, grid);
+    Map map(48.0f, grid);                 //Mapa
+    sf::Clock gameClock;                            //gameClock
+    Player player;                                  //jogador
+    player.position = sf::Vector2f(50,50);
 
     while (window.isOpen()) {
+        float deltaTime = gameClock.restart().asSeconds();
         sf::Event event;
         while (window.pollEvent(event)) {
             if (event.type == sf::Event::Closed) {
@@ -32,8 +37,10 @@ int main() {
             }
         }
 
+        player.update(deltaTime);             //atualiza estados do jogador
         window.clear();
         map.draw(window);
+        player.draw(window);                   //Desenha jogador
         window.display();
     }
 }

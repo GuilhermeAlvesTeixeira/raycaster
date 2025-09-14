@@ -7,6 +7,8 @@ find_package(SFML 2.5 COMPONENTS graphics window system REQUIRED)
 
 add_executable(raycaster main.cpp
         map.cpp
-        map.h)
+        map.h
+        player.cpp
+        player.h)
 
 target_link_libraries(raycaster sfml-graphics sfml-window sfml-system)
