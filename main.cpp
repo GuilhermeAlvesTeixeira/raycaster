@@ -17,6 +17,7 @@ int main() {
     Player player;                                  //jogador
     player.position = sf::Vector2f(96,96);
     Renderer renderer;
+    renderer.init();                                //inicializa render com texturas
 
     /***************************************************************************/
 
