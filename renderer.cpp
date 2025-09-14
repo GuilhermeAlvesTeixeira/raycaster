@@ -21,13 +21,14 @@ constexpr float PI                      = 3.14159265359f;
 constexpr size_t MAX_RAYCAST_DEPTH      = 16;                               //Alcance máximo do raio sem bater em nada
 constexpr size_t MAX_RAYCASTING_STEPS   = 64;                               //Aqui o raio não vai atravessar mais que 64 células no grid
 constexpr float PLAYER_FOV              = 60.0f;                            //Campo de visão do jogador
-constexpr size_t NUM_RAYS               = 120;                              //Número de raios lançados
+constexpr size_t NUM_RAYS               = 600;                              //Número de raios lançados
 constexpr float COLUMN_WIDTH            = SCREEN_W / (float) NUM_RAYS;
 
 struct Ray {
     sf::Vector2f hitPosition;
     float distance;
     bool hit;
+    bool isHitVertical;
 };
 
 static Ray castRay(sf::Vector2f start, float angleInDegrees, const Map &map);
@@ -36,21 +37,35 @@ void Renderer::draw3dView(sf::RenderTarget &target, const Player &player, const 
 
     float angle = player.angle - PLAYER_FOV / 2.0f;
     float angleIncrement = PLAYER_FOV / (float) NUM_RAYS;
+    float maxRenderDistance = MAX_RAYCAST_DEPTH * map.getCellSize();
 
     for (size_t i = 0; i < NUM_RAYS; i++, angle += angleIncrement) {
         Ray ray = castRay(player.position, angle, map);
 
         if (ray.hit) {
+            ray.distance *= std::cos((player.angle - angle) * PI / 180.0f);
+
             float wallHeight = (map.getCellSize() * SCREEN_H) / ray.distance;
 
             if (wallHeight > SCREEN_H) {
                 wallHeight = SCREEN_H;
             }
 
+            //brilho da parede com base na distnacia máxima
+            float brightness = 1.0f - (ray.distance / maxRenderDistance);
+
+            if (brightness < 0.0f) {
+                brightness = 0.0f;
+            }
+
+            //shading simples
+            float shade = (ray.isHitVertical ? 0.8f : 1.0f) * brightness;
+
             float wallOffset = SCREEN_H / 2.0f - wallHeight / 2.0f;
 
             sf::RectangleShape column(sf::Vector2f(COLUMN_WIDTH, wallHeight));
             column.setPosition(i * COLUMN_WIDTH,  wallOffset);
+            column.setFillColor(sf::Color(255 * shade, 255 * shade, 255 * shade));
             target.draw(column);
         }
     }
@@ -163,5 +178,7 @@ Ray castRay(sf::Vector2f start, float angleInDegrees, const Map &map) {
 
         hRayPos += offset;
     }
-    return Ray {hdist < vdist ? hRayPos : vRayPos, std::min(hdist,vdist), hit};
+    return Ray {hdist < vdist ? hRayPos : vRayPos, std::min(hdist,vdist), hit,
+        vdist < hdist
+    };
 }
