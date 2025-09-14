@@ -1,0 +1,18 @@
+//
+// Created by usuario on 14
+#ifndef MAP_H
+#define MAP_H
+
+#include <SFML/Graphics/RenderTarget.hpp>
+#include <vector>
+
+class Map {
+public:
+    Map(float cellSize, int width, int height);
+    void draw(sf::RenderTarget& window);
+private:
+    std::vector<std::vector<int>> grid;
+    float cellSize;
+};
+
+#endif //MAP_H

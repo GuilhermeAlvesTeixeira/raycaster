@@ -2,8 +2,12 @@
 #include <SFML/Window/Event.hpp>
 #include <SFML/Window/VideoMode.hpp>
 
+#include "map.h"
+
 int main() {
-    sf::RenderWindow window(sf::VideoMode(800,450), "Raycaster");
+    sf::RenderWindow window(sf::VideoMode(1200,675), "Raycaster");
+
+    Map map(32.0f, 50, 50);
 
     while (window.isOpen()) {
         sf::Event event;
@@ -14,7 +18,7 @@ int main() {
         }
 
         window.clear();
-        // desenhar cena
+        map.draw(window);
         window.display();
     }
 }
