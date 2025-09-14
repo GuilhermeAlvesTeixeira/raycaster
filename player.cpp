@@ -20,11 +20,11 @@ void Player::draw(sf::RenderTarget &target) {
     sf::CircleShape circle(8.0f);
     circle.setOrigin(circle.getRadius(), circle.getRadius());
     circle.setPosition(position);
-    circle.setFillColor(sf::Color::Blue);
+    circle.setFillColor(sf::Color::Yellow);
 
     sf::RectangleShape line(sf::Vector2f(24.0f, 2.0f));
     line.setPosition(position);
-    line.setFillColor(sf::Color::Blue);
+    line.setFillColor(sf::Color::Yellow);
     line.setRotation(angle);
 
     //DRAW
@@ -51,6 +51,6 @@ void Player::update(float deltaTime) {
         //std::cout << "S" << '\n';
     }
 
-    std::cout << angle << '\n';
+    //std::cout << angle << '\n';
 
 }

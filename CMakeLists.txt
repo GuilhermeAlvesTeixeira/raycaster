@@ -9,6 +9,8 @@ add_executable(raycaster main.cpp
         map.cpp
         map.h
         player.cpp
-        player.h)
+        player.h
+        renderer.cpp
+        renderer.h)
 
 target_link_libraries(raycaster sfml-graphics sfml-window sfml-system)

@@ -12,6 +12,10 @@ public:
     Map(float cellSize, std::vector<std::vector<int>> grid);
 
     void draw(sf::RenderTarget& window);
+
+    const std::vector<std::vector<int>>& getGrid() const;
+    float getCellSize() const;
+
 private:
     std::vector<std::vector<int>> grid;
     float cellSize;

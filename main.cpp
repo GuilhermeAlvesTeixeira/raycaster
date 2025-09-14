@@ -4,6 +4,7 @@
 
 #include "map.h"
 #include "player.h"
+#include "renderer.h"
 
 int main() {
     sf::RenderWindow window(sf::VideoMode(1200,675), "Raycaster");
@@ -23,10 +24,15 @@ int main() {
         {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1},
     };
 
-    Map map(48.0f, grid);                 //Mapa
+    float cellSize = 48.0f;                         //Tamanho da célula
+
+    Map map(cellSize, grid);                     //Mapa
     sf::Clock gameClock;                            //gameClock
     Player player;                                  //jogador
     player.position = sf::Vector2f(50,50);
+    Renderer renderer;
+
+    /***************************************************************************/
 
     while (window.isOpen()) {
         float deltaTime = gameClock.restart().asSeconds();
@@ -37,10 +43,11 @@ int main() {
             }
         }
 
-        player.update(deltaTime);             //atualiza estados do jogador
+        player.update(deltaTime);                           //atualiza estados do jogador
         window.clear();
         map.draw(window);
-        player.draw(window);                   //Desenha jogador
+        player.draw(window);                             //Desenha jogador
+        renderer.drawRays(window, player, map);          //Desenha raios
         window.display();
     }
 }
