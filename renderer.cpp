@@ -38,7 +38,7 @@ void Renderer::draw3dView(sf::RenderTarget &target, const Player &player, const 
 
     //Céu
     sf::RectangleShape rectangle(sf::Vector2f(SCREEN_W, SCREEN_H /2.0f));
-    rectangle.setFillColor(sf::Color(250,170,100));
+    rectangle.setFillColor(sf::Color(100,170,250));
     target.draw(rectangle);
 
     //Chão
@@ -48,7 +48,8 @@ void Renderer::draw3dView(sf::RenderTarget &target, const Player &player, const 
 
     float angle = player.angle - PLAYER_FOV / 2.0f;
     float angleIncrement = PLAYER_FOV / (float) NUM_RAYS;
-    float maxRenderDistance = MAX_RAYCAST_DEPTH * map.getCellSize();
+    const float maxRenderDistance = MAX_RAYCAST_DEPTH * map.getCellSize();
+    const float maxFogDistance = maxRenderDistance / 4.0f;
 
     for (size_t i = 0; i < NUM_RAYS; i++, angle += angleIncrement) {
         Ray ray = castRay(player.position, angle, map);
@@ -77,9 +78,22 @@ void Renderer::draw3dView(sf::RenderTarget &target, const Player &player, const 
             sf::RectangleShape column(sf::Vector2f(COLUMN_WIDTH, wallHeight));
             column.setPosition(i * COLUMN_WIDTH,  wallOffset);
 
+            //Névoa (fog)
+            const sf::Color fogColor = sf::Color(100,170,250);
+            float fogPercentage = (ray.distance / maxFogDistance) ;
+
+            if (fogPercentage > 1.0f) {
+                fogPercentage = 1.0f;
+            }
+
             sf::Color color = map.getGrid()[ray.mapPosition.y][ray.mapPosition.x];
+            color = sf::Color(color.r * shade, color.g * shade, color.b * shade);
+
             column.setFillColor(
-                sf::Color(color.r * shade, color.g * shade, color.b * shade));
+                sf::Color((1.0f - fogPercentage) * color.r + fogPercentage * fogColor.r,
+                        (1.0f - fogPercentage) * color.g + fogPercentage * fogColor.g,
+                         (1.0f - fogPercentage) * color.b + fogPercentage * fogColor.b)
+            );
             target.draw(column);
         }
     }

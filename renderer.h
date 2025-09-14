@@ -6,6 +6,7 @@
 #define RENDERER_H
 
 #include <SFML/Graphics/RenderTarget.hpp>
+#include <SFML/Graphics/Texture.hpp>
 
 #include "player.h"
 #include "map.h"
@@ -19,6 +20,5 @@ public:
     void drawRays(sf::RenderTarget &target, const Player &player, const Map &map);
 private:
 };
-
 
 #endif //RENDERER_H

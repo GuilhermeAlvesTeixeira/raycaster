@@ -11,7 +11,6 @@
 class Map {
 public:
     Map(float cellSize, int width, int height);
-    //Map(float cellSize, const std::vector<std::vector<int>> &grid);
     Map(float cellSize, const std::string &filename);
 
     void draw(sf::RenderTarget& window);
