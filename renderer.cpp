@@ -11,28 +11,22 @@
 #include <SFML/Graphics/Vertex.hpp>
 #include <SFML/System/Vector2.hpp>
 #include <SFML/Graphics/RectangleShape.hpp>
-
 #include <cmath>
 #include <iostream>
-#include <limits>
-
 
 constexpr float PI                      = 3.14159265359f;
 constexpr size_t MAX_RAYCAST_DEPTH      = 64;                               //Alcance máximo do raio sem bater em nada
 constexpr size_t MAX_RAYCASTING_STEPS   = 64;                               //Aqui o raio não vai atravessar mais que 64 células no grid
 constexpr float PLAYER_FOV              = 60.0f;                            //Campo de visão do jogador
-constexpr size_t NUM_RAYS               = 600;                              //Número de raios lançados
-constexpr float COLUMN_WIDTH            = SCREEN_W / (float) NUM_RAYS;
 
+/* talvez não seja mais necessário
 struct Ray {
     sf::Vector2f hitPosition;
     sf::Vector2u mapPosition;
     float distance;
     bool hit;
     bool isHitVertical;
-};
-
-static Ray castRay(sf::Vector2f start, float angleInDegrees, const Map &map);
+};*/
 
 void Renderer::init() {
     if (!wallTexture.loadFromFile("../Textures/hell/wall2.bmp")) {
@@ -63,196 +57,75 @@ void Renderer::draw3dView(sf::RenderTarget &target, const Player &player, const 
     const float maxRenderDistance = MAX_RAYCAST_DEPTH * map.getCellSize();
     const float maxFogDistance = maxRenderDistance / 4.0f;
 
-    float angle = player.angle - PLAYER_FOV / 2.0f;
-    float angleIncrement = PLAYER_FOV / (float) NUM_RAYS;
+    float radians = player.angle * PI/180.0f;
+    sf::Vector2f direction{std::cos(radians), std::sin(radians)};
+    sf::Vector2f plane {-direction.y, direction.x};
 
-    //Para aplicar efeito de fog
-    sf::RectangleShape column{sf::Vector2f(1.0f,1.0f)};
+    sf::VertexArray walls{sf::Lines};
 
-    for (size_t i = 0; i < NUM_RAYS; i++, angle += angleIncrement) {
-        Ray ray = castRay(player.position, angle, map);
+    for (size_t i = 0; i < SCREEN_W; i++) {
+        float cameraX = i * 2.0f / SCREEN_W - 1.0f; // -1.0f -> 0.0f -> 1.0f
+        sf::Vector2f rayPos = player.position / map.getCellSize();
+        sf::Vector2f rayDir = direction + plane * cameraX;
 
-        if (ray.hit) {
-            ray.distance *= std::cos((player.angle - angle) * PI / 180.0f);
+        sf::Vector2f deltaDist {
+            std::abs(1.0f / rayDir.x),
+            std::abs(1.0f / rayDir.y)
+        };
 
-            float wallHeight = (map.getCellSize() * SCREEN_H) / ray.distance;
-            float wallOffset = SCREEN_H / 2.0f - wallHeight / 2.0f;
+        sf::Vector2i mapPos{rayPos};
+        sf::Vector2i step;
+        sf::Vector2f sideDist;
 
-            float textureX;
-            if (ray.isHitVertical) {
-                textureX = ray.hitPosition.y - wallTexture.getSize().x * std::floor(ray.hitPosition.y / wallTexture.getSize().x);
+        if (rayDir.x < 0.0f) {  //direita
+            step.x = -1;
+            sideDist.x = (-mapPos.x + rayPos.x) * deltaDist.x;
+        } else {               // esquerda
+            step.x = 1;
+            sideDist.x = (mapPos.x - rayPos.x + 1.0f) * deltaDist.x;
+        }
+
+        if (rayDir.y < 0.0f) {  //direita
+            step.y = -1;
+            sideDist.y = (-mapPos.y + rayPos.y) * deltaDist.y;
+        } else {               // esquerda
+            step.y = 1;
+            sideDist.y = (mapPos.y - rayPos.y + 1.0f) * deltaDist.y;
+        }
+
+        // ********************** Hora do dda *******************************
+
+        bool didHit {}, isHitVertical {};
+        size_t depth = 0;
+
+        while (!didHit && depth < MAX_RAYCAST_DEPTH) {
+            if (sideDist.x < sideDist.y) {
+                sideDist.x += deltaDist.x;
+                mapPos.x += step.x;
+                isHitVertical = false;
             } else {
-                textureX = wallTexture.getSize().x * std::ceil(ray.hitPosition.x / wallTexture.getSize().x) - ray.hitPosition.x;
+                sideDist.y += deltaDist.y;
+                mapPos.y += step.y;
+                isHitVertical = true;
             }
 
-            wallSprite.setPosition(i * COLUMN_WIDTH,  wallOffset);
-            wallSprite.setTextureRect(sf::IntRect(textureX, 0, wallTexture.getSize().x / map.getCellSize(),
-                                                                             wallTexture.getSize().y));
-            wallSprite.setScale(COLUMN_WIDTH,
-                                wallHeight / wallTexture.getSize().y);
+            int x = mapPos.x, y = mapPos.y;
+            const auto &grid = map.getGrid();
 
-            if (wallHeight > SCREEN_H) {
-                wallHeight = SCREEN_H;
+            if (y >= 0 && y <  grid.size() && x >= 0 && x < grid[y].size() && grid[y][x] != sf::Color::Black) {
+                didHit = true;
             }
-
-            //brilho da parede com base na distnacia máxima
-            float brightness = 1.0f - (ray.distance / maxRenderDistance);
-
-            if (brightness < 0.0f) {
-                brightness = 0.0f;
-            }
-
-            //shading simples
-            float shade = (ray.isHitVertical ? 0.8f : 1.0f) * brightness;
-
-            //Névoa (fog)
-            const sf::Color fogColor = sf::Color(70,70,70);
-            float fogPercentage = (ray.distance / maxFogDistance) ;
-
-            if (fogPercentage > 1.0f) {
-                fogPercentage = 1.0f;
-            }
-
-            //FOG
-            column.setPosition(i * COLUMN_WIDTH, wallOffset);
-            column.setScale(COLUMN_WIDTH, wallHeight);
-            column.setFillColor(sf::Color(fogColor.r, fogColor.g, fogColor.b, fogPercentage * 255));
-
-            /*  //PAREDES COM CORES
-            sf::Color color = map.getGrid()[ray.mapPosition.y][ray.mapPosition.x];
-            color = sf::Color(color.r * shade, color.g * shade, color.b * shade);
-            column.setFillColor(
-                sf::Color((1.0f - fogPercentage) * color.r + fogPercentage * fogColor.r,
-                          (1.0f - fogPercentage) * color.g + fogPercentage * fogColor.g,
-                          (1.0f - fogPercentage) * color.b + fogPercentage * fogColor.b)
-            );*/
-            wallSprite.setColor(sf::Color(255 * shade, 255 * shade, 255 * shade));
-
-            //Desenha imagens com textura
-            target.draw(wallSprite);
-            target.draw(column);
+            depth++;
         }
+        float perpWallDist = isHitVertical? sideDist.y - deltaDist.y : sideDist.x - deltaDist.x;
+        float wallHeight = SCREEN_H / perpWallDist;
+        float wallStart = (-wallHeight + SCREEN_H)/2.0f;
+        float wallEnd = (wallHeight + SCREEN_H)/2.0f;
+
+        walls.append(sf::Vertex(sf::Vector2f((float)i, wallStart)));
+        walls.append(sf::Vertex(sf::Vector2f((float)i, wallEnd)));
     }
+    target.draw(walls);
 }
 
-void Renderer::drawRays(sf::RenderTarget &target, const Player &player, const Map &map) {
-
-    for (float angle = player.angle - PLAYER_FOV/2.0f; angle < player.angle + PLAYER_FOV; angle += 1.0f) {
-        Ray ray = castRay(player.position, angle, map);
-
-        if (ray.hit) {
-            sf::Vertex line[] = {
-                sf::Vertex(player.position),
-                sf::Vertex(ray.hitPosition),
-            };
-            line[0].color = sf::Color::Red;
-            line[1].color = sf::Color::Red;
-
-            target.draw(line, 2, sf::Lines);
-        }
-    }
-}
-
-Ray castRay(sf::Vector2f start, float angleInDegrees, const Map &map) {
-    float angle = angleInDegrees * PI / 180.f;
-    float vTan = -std::tan(angle), hTan = -(1.0f) / std::tan(angle);
-    float cellSize = map.getCellSize();
-
-    bool hit = false;
-
-    size_t vdof = 0, hdof = 0;                                                               //controladores de profundidade. numero de passos até colidir na vertical ou horizontal
-    float vdist = std::numeric_limits<float>::max();
-    float hdist = std::numeric_limits<float>::max();
-
-    sf::Vector2u vMapPos, hMapPos;
-    sf::Vector2f vRayPos, hRayPos, offset;
-
-    // *********************** Calculando interseções verticais ************************
-
-    if (std::cos(angle) > 0.001f) {                                                          //O jogador está olhando para baixo no sistema de coordenadas de tela
-        vRayPos.x = std::floor(start.x / cellSize) * cellSize + cellSize;
-        vRayPos.y = (start.x - vRayPos.x) * vTan + start.y;                                  //eq. da reta dado y conhecido
-
-        offset.x = cellSize;
-        offset.y = -offset.x * vTan;
-        //std::cout << "Olhando para esquerda" << '\n';
-
-    } else if (std::cos(angle) < -0.001f) {                                                 //O jogador está olhando para cima no sistema de coordenadas de tela
-        vRayPos.x = std::floor(start.x / cellSize) * cellSize - 0.01f;
-        vRayPos.y = (start.x - vRayPos.x) * vTan + start.y;                                 //eq. da reta dado y conhecido
-
-        offset.x = -cellSize;
-        offset.y = -offset.x * vTan;
-        //std::cout << "Olhando para direita" << '\n';
-    } else {
-        vdof = MAX_RAYCAST_DEPTH;
-    }
-
-    //******************** Digital Differential Analysis (DDA) na vertical ***********************
-
-    const auto &grid = map.getGrid();
-    for (; vdof < MAX_RAYCASTING_STEPS; vdof++) {
-        int mapX = (int)(vRayPos.x / cellSize);
-        int mapY = (int)(vRayPos.y / cellSize);
-
-        if (mapY < grid.size() && mapX < grid[mapY].size() &&
-            grid[mapY][mapX] != sf::Color::Black) {
-            hit = true;
-            //Calcula a distancia vertical entre a posição do jogador e a posição do raio
-            vdist = std::sqrt(
-            (vRayPos.x - start.x) * (vRayPos.x - start.x)
-            + (vRayPos.y - start.y) * (vRayPos.y - start.y)
-            );
-            vMapPos = sf::Vector2u(mapX,mapY);
-            break;
-        }
-
-        vRayPos += offset;
-    }
-
-    // *********************** Calculando interseções horizontais ************************
-
-    if (std::sin(angle) > 0.001f) {                                                          //O jogador está olhando para baixo no sistema de coordenadas de tela
-        hRayPos.y = std::floor(start.y / cellSize) * cellSize + cellSize;
-        hRayPos.x = (start.y - hRayPos.y) * hTan + start.x;                                  //eq. da reta dado y conhecido
-        offset.y = cellSize;
-        offset.x = -offset.y * hTan;
-        //std::cout << "Olhando para baixo" << '\n';
-
-    } else if (std::sin(angle) < -0.001f) {                                                 //O jogador está olhando para cima no sistema de coordenadas de tela
-        hRayPos.y = std::floor(start.y/ cellSize) * cellSize - 0.01f;
-        hRayPos.x = (start.y - hRayPos.y) * hTan + start.x;                                  // eq.da reta dado y conhecido
-        offset.y = -cellSize;
-        offset.x = -offset.y * hTan;
-        //std::cout << "Olhando para cima" << '\n';
-    } else {
-        hdof = MAX_RAYCAST_DEPTH;
-    }
-
-    //******************** Digital Differential Analysis (DDA) na Horizontal ***********************
-
-    for (; hdof < MAX_RAYCASTING_STEPS; hdof++) {
-        int mapX = (int)(hRayPos.x / cellSize);
-        int mapY = (int)(hRayPos.y / cellSize);
-
-        if (mapY < grid.size() && mapX < grid[mapY].size() &&
-            grid[mapY][mapX] != sf::Color::Black) {
-            hit = true;
-            //Calcula a distancia horizontal entre a posição do jogador e a posição do raio
-            hdist = std::sqrt(
-            (hRayPos.x - start.x) * (hRayPos.x - start.x)
-            + (hRayPos.y - start.y) * (hRayPos.y - start.y)
-            );
-            hMapPos = sf::Vector2u(mapX,mapY);
-            break;
-        }
-
-        hRayPos += offset;
-    }
-    return Ray {
-        hdist < vdist ? hRayPos : vRayPos,
-        hdist < vdist ? hMapPos : vMapPos, std::min(hdist, vdist), hit,
-        vdist <= hdist
-    };
-};
 
