@@ -60,10 +60,14 @@ void Renderer::draw3dView(sf::RenderTarget &target, const Player &player, const 
     rectangle.setFillColor(sf::Color(180,0,0));
     target.draw(rectangle);
 
-    float angle = player.angle - PLAYER_FOV / 2.0f;
-    float angleIncrement = PLAYER_FOV / (float) NUM_RAYS;
     const float maxRenderDistance = MAX_RAYCAST_DEPTH * map.getCellSize();
     const float maxFogDistance = maxRenderDistance / 4.0f;
+
+    float angle = player.angle - PLAYER_FOV / 2.0f;
+    float angleIncrement = PLAYER_FOV / (float) NUM_RAYS;
+
+    //Para aplicar efeito de fog
+    sf::RectangleShape column{sf::Vector2f(1.0f,1.0f)};
 
     for (size_t i = 0; i < NUM_RAYS; i++, angle += angleIncrement) {
         Ray ray = castRay(player.position, angle, map);
@@ -81,7 +85,6 @@ void Renderer::draw3dView(sf::RenderTarget &target, const Player &player, const 
                 textureX = wallTexture.getSize().x * std::ceil(ray.hitPosition.x / wallTexture.getSize().x) - ray.hitPosition.x;
             }
 
-            sf::RectangleShape column(sf::Vector2f(COLUMN_WIDTH, wallHeight));
             wallSprite.setPosition(i * COLUMN_WIDTH,  wallOffset);
             wallSprite.setTextureRect(sf::IntRect(textureX, 0, wallTexture.getSize().x / map.getCellSize(),
                                                                              wallTexture.getSize().y));
@@ -103,13 +106,17 @@ void Renderer::draw3dView(sf::RenderTarget &target, const Player &player, const 
             float shade = (ray.isHitVertical ? 0.8f : 1.0f) * brightness;
 
             //Névoa (fog)
-            const sf::Color fogColor = sf::Color(100,170,250);
+            const sf::Color fogColor = sf::Color(70,70,70);
             float fogPercentage = (ray.distance / maxFogDistance) ;
 
             if (fogPercentage > 1.0f) {
                 fogPercentage = 1.0f;
             }
 
+            //FOG
+            column.setPosition(i * COLUMN_WIDTH, wallOffset);
+            column.setScale(COLUMN_WIDTH, wallHeight);
+            column.setFillColor(sf::Color(fogColor.r, fogColor.g, fogColor.b, fogPercentage * 255));
 
             /*  //PAREDES COM CORES
             sf::Color color = map.getGrid()[ray.mapPosition.y][ray.mapPosition.x];
@@ -119,7 +126,11 @@ void Renderer::draw3dView(sf::RenderTarget &target, const Player &player, const 
                           (1.0f - fogPercentage) * color.g + fogPercentage * fogColor.g,
                           (1.0f - fogPercentage) * color.b + fogPercentage * fogColor.b)
             );*/
+            wallSprite.setColor(sf::Color(255 * shade, 255 * shade, 255 * shade));
+
+            //Desenha imagens com textura
             target.draw(wallSprite);
+            target.draw(column);
         }
     }
 }
