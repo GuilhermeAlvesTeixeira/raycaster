@@ -41,5 +41,7 @@ int main() {
         /* cena "3d" */
         renderer.draw3dView(window,player,map);
         window.display();
+
+        window.setTitle("Raycaster | " + std::to_string(1.0f / deltaTime));     //Pegar o frameRate
     }
 }

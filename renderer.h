@@ -12,8 +12,12 @@
 #include "player.h"
 #include "map.h"
 
-constexpr float SCREEN_W = 1200.0f;
-constexpr float SCREEN_H = 675.0f;
+//constexpr float SCREEN_W = 1280;
+//constexpr float SCREEN_H = 720;
+
+constexpr float SCREEN_W = 1920;
+constexpr float SCREEN_H = 1080;
+
 
 class Renderer {
 public:
@@ -21,7 +25,7 @@ public:
     void draw3dView(sf::RenderTarget &target, const Player &player, const Map &map);
 private:
     sf::Texture wallTexture;
-    sf::Sprite wallSprite;
+    sf::Image floorImage;
 };
 
 #endif //RENDERER_H
