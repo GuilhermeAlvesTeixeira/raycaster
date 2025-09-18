@@ -12,12 +12,8 @@
 #include "player.h"
 #include "map.h"
 
-//constexpr float SCREEN_W = 1280;
-//constexpr float SCREEN_H = 720;
-
-constexpr float SCREEN_W = 1920;
-constexpr float SCREEN_H = 1080;
-
+constexpr float SCREEN_W = 1280;
+constexpr float SCREEN_H = 720;
 
 class Renderer {
 public:
@@ -26,6 +22,7 @@ public:
 private:
     sf::Texture wallTexture;
     sf::Image floorImage;
+    sf::Image ceilImage;
 };
 
 #endif //RENDERER_H

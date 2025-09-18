@@ -6,7 +6,7 @@
  * y = m(x - x0) + y0, onde m = tan(angle)
  *
  */
-#include "renderer.h">
+#include "renderer.h"
 #include <SFML/Graphics/PrimitiveType.hpp>
 #include <SFML/Graphics/Vertex.hpp>
 #include <SFML/System/Vector2.hpp>
@@ -19,8 +19,9 @@ constexpr size_t MAX_RAYCAST_DEPTH      = 64;                               //Al
 constexpr float PLAYER_FOV              = 60.0f;                            //Campo de visão do jogador
 constexpr float CAMERA_Z                = 0.5 * SCREEN_H;                   //No centro da tela
 
-const std::string WALL_PATH  = "../Textures/Lab/[SUB]wall_A_003.png";         //Walls
-const std::string FLOOR_PATH = "../Textures/Lab/[SUB]floor_A_003.png";
+const std::string WALL_PATH  = "../Textures/Lab/[SUB]wall_A_003.png";       //Walls
+const std::string FLOOR_PATH = "../Textures/Lab/[SUB]floor_A_003.png";      //Floor
+const std::string CEIL_PATH  = "../Textures/Lab/ceil.gif";    //Ceiling
 
 void Renderer::init() {
     //WALLS
@@ -34,26 +35,24 @@ void Renderer::init() {
 
     //FLOOR
     if (!floorImage.loadFromFile(FLOOR_PATH)) {
-        std::cerr << "Erro ao carregar textura" << '\n';
+        std::cerr << "Erro ao carregar textura do chão" << '\n';
     };
 
     if (floorImage.getSize().x != floorImage.getSize().y) {
-        std::cerr << "ERRO: Textura não possui as mesmas dimensões " << '\n';
+        std::cerr << "ERRO: Textura do chão não possui as mesmas dimensões " << '\n';
     }
 
+    //CEILING
+    if (!ceilImage.loadFromFile(CEIL_PATH)) {
+        std::cerr << "Erro ao carregar textura do teto" << '\n';
+    };
+
+    if (ceilImage.getSize().x != ceilImage.getSize().y) {
+        std::cerr << "ERRO: Textura do teto não possui as mesmas dimensões " << '\n';
+    }
 }
 
 void Renderer::draw3dView(sf::RenderTarget &target, const Player &player, const Map &map) {
-
-    //Céu
-    sf::RectangleShape rectangle(sf::Vector2f(SCREEN_W, SCREEN_H /2.0f));
-    rectangle.setFillColor(sf::Color(80,30,30));
-    target.draw(rectangle);
-
-    //Chão
-    rectangle.setPosition(0.0f, SCREEN_H /2.0f);
-    rectangle.setFillColor(sf::Color(180,0,0));
-    target.draw(rectangle);
 
     float radians = player.angle * PI/180.0f;
     sf::Vector2f direction{std::cos(radians), std::sin(radians)};
@@ -61,20 +60,25 @@ void Renderer::draw3dView(sf::RenderTarget &target, const Player &player, const 
     sf::Vector2f position = player.position / map.getCellSize();
 
     sf::VertexArray walls{sf::Lines};
-
-    static sf::Texture floorTextureGPU;
+    static sf::Texture worldTextureGPU;
     static bool initialized = false;
-    static std::vector<sf::Uint8> floorPixels((size_t)SCREEN_W * (size_t)SCREEN_H * 4);
+    static std::vector<sf::Uint8> worldPixels((size_t)SCREEN_W * (size_t)SCREEN_H * 4);
 
     if (!initialized) {
-        floorTextureGPU.create(SCREEN_W, SCREEN_H);
+        worldTextureGPU.create(SCREEN_W, SCREEN_H);
         initialized = true;
     }
 
     const sf::Uint8* floorData = floorImage.getPixelsPtr();
-    int texSize = floorImage.getSize().x;
-    int mask = texSize - 1;
+    const sf::Uint8* ceilData  = ceilImage.getPixelsPtr();
 
+    int texSizeFloor = floorImage.getSize().x;
+    int texSizeCeil  = ceilImage.getSize().x;
+
+    int maskFloor = texSizeFloor - 1;
+    int maskCeil  = texSizeCeil - 1;
+
+    // -------- FLOOR --------
     for (size_t y = SCREEN_H/2; y < SCREEN_H; y++) {
         sf::Vector2f rayDirLeft {direction - plane}, rayDirRight{direction + plane};
         float rowDistance = CAMERA_Z / ((float)y - SCREEN_H/2);
@@ -83,24 +87,48 @@ void Renderer::draw3dView(sf::RenderTarget &target, const Player &player, const 
 
         for (size_t x = 0; x < SCREEN_W; x++) {
             sf::Vector2i cell{floor};
-            sf::Vector2i texCoords{(int)(texSize * (floor.x - cell.x)), (int)(texSize * (floor.y - cell.y))};
-            texCoords.x &= mask;
-            texCoords.y &= mask;
+            sf::Vector2i texCoords{(int)(texSizeFloor * (floor.x - cell.x)), (int)(texSizeFloor * (floor.y - cell.y))};
+            texCoords.x &= maskFloor;
+            texCoords.y &= maskFloor;
 
-            int idx = (texCoords.y * texSize + texCoords.x) * 4;
+            int idx = (texCoords.y * texSizeFloor + texCoords.x) * 4;
             int dst = (x + y * (size_t)SCREEN_W) * 4;
-            floorPixels[dst + 0] = floorData[idx + 0];
-            floorPixels[dst + 1] = floorData[idx + 1];
-            floorPixels[dst + 2] = floorData[idx + 2];
-            floorPixels[dst + 3] = floorData[idx + 3];
+            worldPixels[dst + 0] = floorData[idx + 0];
+            worldPixels[dst + 1] = floorData[idx + 1];
+            worldPixels[dst + 2] = floorData[idx + 2];
+            worldPixels[dst + 3] = floorData[idx + 3];
 
             floor += floorStep;
         }
     }
 
-    floorTextureGPU.update(floorPixels.data());
-    sf::Sprite floorSprite{floorTextureGPU};
-    target.draw(floorSprite);
+    // -------- CEILING --------
+    for (int y = (int)SCREEN_H/2 - 1; y >= 0; y--) {
+        sf::Vector2f rayDirLeft {direction - plane}, rayDirRight{direction + plane};
+        float rowDistance = CAMERA_Z / ((float)SCREEN_H/2 - (float)y);
+        sf::Vector2f ceilStep = rowDistance * (rayDirRight - rayDirLeft)/SCREEN_W;
+        sf::Vector2f ceilPos = position + rowDistance * rayDirLeft;
+
+        for (size_t x = 0; x < SCREEN_W; x++) {
+            sf::Vector2i cell{ceilPos};
+            sf::Vector2i texCoords{(int)(texSizeCeil * (ceilPos.x - cell.x)), (int)(texSizeCeil * (ceilPos.y - cell.y))};
+            texCoords.x &= maskCeil;
+            texCoords.y &= maskCeil;
+
+            int idx = (texCoords.y * texSizeCeil + texCoords.x) * 4;
+            int dst = (x + y * (size_t)SCREEN_W) * 4;
+            worldPixels[dst + 0] = ceilData[idx + 0];
+            worldPixels[dst + 1] = ceilData[idx + 1];
+            worldPixels[dst + 2] = ceilData[idx + 2];
+            worldPixels[dst + 3] = ceilData[idx + 3];
+
+            ceilPos += ceilStep;
+        }
+    }
+
+    worldTextureGPU.update(worldPixels.data());
+    sf::Sprite worldSprite{worldTextureGPU};
+    target.draw(worldSprite);
 
     for (size_t i = 0; i < SCREEN_W; i++) {
         float cameraX = i * 2.0f / SCREEN_W - 1.0f;
@@ -181,6 +209,3 @@ void Renderer::draw3dView(sf::RenderTarget &target, const Player &player, const 
     sf::RenderStates states{&wallTexture};
     target.draw(walls, states);
 }
-
-
-
