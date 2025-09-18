@@ -29,7 +29,7 @@ struct Ray {
 };*/
 
 void Renderer::init() {
-    if (!wallTexture.loadFromFile("../Textures/hell/wall2.bmp")) {
+    if (!wallTexture.loadFromFile("../wall_texture.png")) {
         std::cerr << "Erro ao carregar textura" << '\n';
         return;
     };
@@ -53,9 +53,6 @@ void Renderer::draw3dView(sf::RenderTarget &target, const Player &player, const 
     rectangle.setPosition(0.0f, SCREEN_H /2.0f);
     rectangle.setFillColor(sf::Color(180,0,0));
     target.draw(rectangle);
-
-    const float maxRenderDistance = MAX_RAYCAST_DEPTH * map.getCellSize();
-    const float maxFogDistance = maxRenderDistance / 4.0f;
 
     float radians = player.angle * PI/180.0f;
     sf::Vector2f direction{std::cos(radians), std::sin(radians)};
@@ -117,15 +114,37 @@ void Renderer::draw3dView(sf::RenderTarget &target, const Player &player, const 
             }
             depth++;
         }
-        float perpWallDist = isHitVertical? sideDist.y - deltaDist.y : sideDist.x - deltaDist.x;
-        float wallHeight = SCREEN_H / perpWallDist;
-        float wallStart = (-wallHeight + SCREEN_H)/2.0f;
-        float wallEnd = (wallHeight + SCREEN_H)/2.0f;
 
-        walls.append(sf::Vertex(sf::Vector2f((float)i, wallStart)));
-        walls.append(sf::Vertex(sf::Vector2f((float)i, wallEnd)));
+        if (didHit) {
+            float perpWallDist = isHitVertical? sideDist.y - deltaDist.y : sideDist.x - deltaDist.x;
+            float wallHeight = SCREEN_H / perpWallDist;
+            float wallStart = (-wallHeight + SCREEN_H)/2.0f;
+            float wallEnd = (wallHeight + SCREEN_H)/2.0f;
+
+            //Texturas
+            float textureSize = wallTexture.getSize().x;
+            float wallX = isHitVertical? rayPos.x + perpWallDist * rayDir.x :
+                                         rayPos.y + perpWallDist * rayDir.y;
+            wallX -= std::floor(wallX);
+            float textureX = wallX * textureSize;
+
+            //Brilho e Shading
+            float brightness = 1.0f - (perpWallDist/ (float)MAX_RAYCAST_DEPTH);
+
+            if (isHitVertical) {
+                brightness *= 0.7f;
+            }
+
+            sf::Color color = sf::Color(255*brightness, 255*brightness, 255*brightness);
+
+            walls.append(sf::Vertex(sf::Vector2f((float)i, wallStart), color, sf::Vector2f(textureX, 0.0f)));
+            walls.append(sf::Vertex(sf::Vector2f((float)i, wallEnd), color, sf::Vector2f(textureX, textureSize)));
+        }
     }
-    target.draw(walls);
+    sf::RenderStates states{&wallTexture};
+    target.draw(walls, states);
+
+
 }
 
 

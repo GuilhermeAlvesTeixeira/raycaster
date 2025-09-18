@@ -12,7 +12,7 @@
 #include "player.h"
 #include "map.h"
 
-constexpr float SCREEN_W = 800.0f;
+constexpr float SCREEN_W = 1200.0f;
 constexpr float SCREEN_H = 675.0f;
 
 class Renderer {
