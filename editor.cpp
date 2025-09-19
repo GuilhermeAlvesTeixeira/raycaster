@@ -10,17 +10,17 @@
 
 #include "editor.h"
 
-void Editor::init(sf::RenderWindow &window) {view = window.getDefaultView();}
+void Editor::init(sf::RenderWindow &window) {view = window.getDefaultView(); cell.setFillColor(sf::Color::Transparent); cell.setOutlineColor(sf::Color::Green); cell.setOutlineThickness(1.0f);}
 
-void Editor::run(sf::RenderWindow &window) {
+void Editor::run(sf::RenderWindow &window, Map &map) {
+    sf::Vector2i mousePos = sf::Mouse::getPosition(window);
+
     if (sf::Mouse::isButtonPressed(sf::Mouse::Right)) {
         if (isFirstMouse) {
-            lastMousePos = sf::Mouse::getPosition(window);
+            lastMousePos = mousePos;
             isFirstMouse = false;
         } else {
-            sf::Vector2i mousePos = sf::Mouse::getPosition(window);
             sf::Vector2i mouseDelta = mousePos - lastMousePos;
-
             view.setCenter(view.getCenter() - (sf::Vector2f)mouseDelta);
             sf::Mouse::setPosition(lastMousePos, window);
         }
@@ -28,6 +28,18 @@ void Editor::run(sf::RenderWindow &window) {
     } else {
         isFirstMouse = true;
         window.setMouseCursorVisible(true);
+    }
+
+    sf::Vector2f worldPos = window.mapPixelToCoords(mousePos);
+    sf::Vector2i mapPos = (sf::Vector2i) (worldPos / map.getCellSize());
+
+    cell.setSize(sf::Vector2f(map.getCellSize(), map.getCellSize()));
+    cell.setPosition((sf::Vector2f) mapPos * map.getCellSize());
+
+    window.draw(cell);
+
+    if (sf::Mouse::isButtonPressed(sf::Mouse::Left)) {
+        map.setMapCell(mapPos.x, mapPos.y, sf::Keyboard::isKeyPressed(sf::Keyboard::LShift) ? 0 : 1);
     }
     window.setView(view);
 }

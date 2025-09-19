@@ -56,8 +56,8 @@ int main() {
             player.update(deltaTime);                           //atualiza estados do jogador
             renderer.draw3dView(window,player,map);
         } else {
-            editor.run(window);
             map.draw(window);
+            editor.run(window, map);
         }
 
         window.display();
