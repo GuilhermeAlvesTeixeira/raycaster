@@ -1,6 +1,8 @@
 #include <SFML/Graphics/RenderWindow.hpp>
 #include <SFML/Window/Event.hpp>
 #include <SFML/Window/VideoMode.hpp>
+
+#include "editor.h"
 #include "map.h"
 #include "player.h"
 #include "renderer.h"
@@ -20,6 +22,10 @@ int main() {
     Renderer renderer;
     renderer.init();                                //inicializa render com texturas
 
+    /********* Editor ***********/
+    Editor editor{};
+    editor.init(window);
+
     float timeAcc = 0.0f;                           //Acumulador para controlar a atualização do título
     float fps = 0.0f;
 
@@ -36,16 +42,22 @@ int main() {
                 event.key.code == sf::Keyboard::Escape){
                 state = state == State::Game ? State::Editor : State::Game;
             }
+
+            if (state == State::Editor) {
+                editor.handleEvent(event);
+            }
         }
 
         window.clear();
 
         if (state == State::Game) {
             /* cena "3d" */
+            window.setView(window.getDefaultView());
             player.update(deltaTime);                           //atualiza estados do jogador
             renderer.draw3dView(window,player,map);
         } else {
-            //implementar isso daqui #24 5:11
+            editor.run(window);
+            map.draw(window);
         }
 
         window.display();

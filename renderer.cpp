@@ -177,7 +177,7 @@ void Renderer::draw3dView(sf::RenderTarget &target, const Player &player, const 
             int x = mapPos.x, y = mapPos.y;
             const auto &grid = map.getGrid();
 
-            if (y >= 0 && y <  grid.size() && x >= 0 && x < grid[y].size() && grid[y][x] != sf::Color::Black) {
+            if (y >= 0 && y <  grid.size() && x >= 0 && x < grid[y].size() && grid[y][x]) {
                 didHit = true;
             }
             depth++;

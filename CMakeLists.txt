@@ -11,6 +11,8 @@ add_executable(raycaster main.cpp
         player.cpp
         player.h
         renderer.cpp
-        renderer.h)
+        renderer.h
+        editor.cpp
+        editor.h)
 
 target_link_libraries(raycaster sfml-graphics sfml-window sfml-system)
