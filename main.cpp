@@ -21,16 +21,29 @@ int main() {
         return 1;
     }
 
+    /**************************** MAPA **********************************/
+
     float cellSize = 48.0f;                         //Tamanho da célula
 
-    Map map(cellSize, "../map.png");     //Mapa
+    Map map {cellSize};                              //Mapa
+    map.load("../map_bin.map");                 //carregar mapa
+
+    /**************************** GAME CLOCK **********************************/
+
     sf::Clock gameClock;                            //gameClock
+
+    /**************************** PLAYER **********************************/
+
     Player player;                                  //jogador
     player.position = sf::Vector2f(96,96);
+
+    /**************************** RENDER **********************************/
+
     Renderer renderer;
     renderer.init();                                //inicializa render com texturas
 
-    /********* Editor ***********/
+    /**************************** EDITOR **********************************/
+
     Editor editor{};
     editor.init(window);
 
@@ -38,6 +51,7 @@ int main() {
     float fps = 0.0f;
 
     enum class State {Editor, Game} state = State::Game;
+
     /***************************************************************************/
 
     while (window.isOpen()) {
