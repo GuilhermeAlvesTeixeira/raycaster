@@ -26,5 +26,4 @@ private:
 };
 
 
-
 #endif //EDITOR_H

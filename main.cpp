@@ -1,7 +1,10 @@
+#include <iostream>
 #include <SFML/Graphics/RenderWindow.hpp>
 #include <SFML/Window/Event.hpp>
 #include <SFML/Window/VideoMode.hpp>
 
+#include "imgui-sfml/imgui-SFML.h"
+#include "imgui/imgui.h"
 #include "editor.h"
 #include "map.h"
 #include "player.h"
@@ -12,6 +15,11 @@ int main() {
         sf::Style::Close | sf::Style::Titlebar);
 
     window.setVerticalSyncEnabled((true));          //ajuda a evitar sobrecargas (tive um bug sinistro alternando de estado com 'Esc' sem isso)
+
+    if (!ImGui::SFML::Init(window)) {
+        std::cerr << "Erro ao inicializar o ImGui\n";
+        return 1;
+    }
 
     float cellSize = 48.0f;                         //Tamanho da célula
 
@@ -33,7 +41,9 @@ int main() {
     /***************************************************************************/
 
     while (window.isOpen()) {
-        float deltaTime = gameClock.restart().asSeconds();
+        sf::Time deltaTime = gameClock.restart();
+        ImGui::SFML::Update(window, deltaTime );
+
         sf::Event event;
         while (window.pollEvent(event)) {
             if (event.type == sf::Event::Closed) {
@@ -46,29 +56,34 @@ int main() {
             if (state == State::Editor) {
                 editor.handleEvent(event);
             }
+
+            ImGui::SFML::ProcessEvent(window,event);
         }
 
+        ImGui::ShowDemoWindow();
         window.clear();
 
         if (state == State::Game) {
             /* cena "3d" */
             window.setView(window.getDefaultView());
-            player.update(deltaTime);                           //atualiza estados do jogador
+            player.update(deltaTime.asSeconds());                           //atualiza estados do jogador
             renderer.draw3dView(window,player,map);
         } else {
             map.draw(window);
             editor.run(window, map);
         }
 
+        ImGui::SFML::Render(window);
         window.display();
 
-        timeAcc += deltaTime;
+        timeAcc += deltaTime.asSeconds();
         if (timeAcc >= 1.0f) {
-            if (deltaTime > 0.0f) {
-                fps = 1.0f / deltaTime;
+            if (deltaTime.asSeconds() > 0.0f) {
+                fps = 1.0f / deltaTime.asSeconds();
             }
         }
-        window.setTitle("Raycaster | " + std::to_string(1.0f / deltaTime));    //Pegar o frameRate
+        window.setTitle("Raycaster | " + std::to_string(1.0f / deltaTime.asSeconds()));    //Pegar o frameRate
         timeAcc = 0.0f;
     }
+    ImGui::SFML::Shutdown();
 }

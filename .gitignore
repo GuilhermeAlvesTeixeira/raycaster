@@ -1,0 +1,31 @@
+# ===== Build =====
+/build/
+CMakeFiles/
+CMakeCache.txt
+cmake-build-*/
+Makefile
+*.cmake
+*.o
+*.obj
+*.exe
+*.out
+*.a
+*.so
+*.dll
+
+# ===== CLion =====
+.idea/
+*.iml
+*.iws
+cmake-build-*/
+
+# ===== Backup / Temp =====
+*~
+*.swp
+*.tmp
+*.log
+
+# ===== Libraries / External =====
+/imgui/
+/imgui-sfml/
+
