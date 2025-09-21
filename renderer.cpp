@@ -6,13 +6,15 @@
  * y = m(x - x0) + y0, onde m = tan(angle)
  *
  */
-#include "renderer.h"
 #include <SFML/Graphics/PrimitiveType.hpp>
 #include <SFML/Graphics/Vertex.hpp>
 #include <SFML/System/Vector2.hpp>
 #include <SFML/Graphics/RectangleShape.hpp>
 #include <cmath>
 #include <iostream>
+
+#include "renderer.h"
+#include "resources.h"
 
 constexpr float PI                      = 3.14159265359f;
 constexpr size_t MAX_RAYCAST_DEPTH      = 64;                               //Alcance máximo do raio sem bater em nada
@@ -160,10 +162,10 @@ void Renderer::draw3dView(sf::RenderTarget &target, const Player &player, const 
             sideDist.y = (mapPos.y - rayPos.y + 1.0f) * deltaDist.y;
         }
 
-        bool didHit {}, isHitVertical {};
+        int hit {}, isHitVertical {};
         size_t depth = 0;
 
-        while (!didHit && depth < MAX_RAYCAST_DEPTH) {
+        while (hit == 0 && depth < MAX_RAYCAST_DEPTH) {
             if (sideDist.x < sideDist.y) {
                 sideDist.x += deltaDist.x;
                 mapPos.x += step.x;
@@ -178,12 +180,12 @@ void Renderer::draw3dView(sf::RenderTarget &target, const Player &player, const 
             const auto &grid = map.getGrid();
 
             if (y >= 0 && y <  grid.size() && x >= 0 && x < grid[y].size() && grid[y][x]) {
-                didHit = true;
+                hit = grid[y][x];
             }
             depth++;
         }
 
-        if (didHit) {
+        if (hit > 0) {
             float perpWallDist = isHitVertical? sideDist.y - deltaDist.y : sideDist.x - deltaDist.x;
             float wallHeight = SCREEN_H / perpWallDist;
             float wallStart = (-wallHeight + SCREEN_H)/2.0f;
@@ -195,17 +197,18 @@ void Renderer::draw3dView(sf::RenderTarget &target, const Player &player, const 
             wallX -= std::floor(wallX);
             float textureX = wallX * textureSize;
 
+            //iluminação da parede
             float brightness = 1.0f - (perpWallDist/ (float)MAX_RAYCAST_DEPTH);
             if (isHitVertical) {
                 brightness *= 0.7f;
             }
 
             sf::Color color = sf::Color(255*brightness, 255*brightness, 255*brightness);
-            walls.append(sf::Vertex(sf::Vector2f((float)i, wallStart), color, sf::Vector2f(textureX, 0.0f)));
-            walls.append(sf::Vertex(sf::Vector2f((float)i, wallEnd), color, sf::Vector2f(textureX, textureSize)));
+            walls.append(sf::Vertex(sf::Vector2f((float)i, wallStart), color, sf::Vector2f(textureX + (hit - 1) * textureSize, 0.0f)));
+            walls.append(sf::Vertex(sf::Vector2f((float)i, wallEnd), color, sf::Vector2f(textureX + (hit - 1) * textureSize, textureSize)));
         }
     }
 
-    sf::RenderStates states{&wallTexture};
+    sf::RenderStates states{&Resources::wallTexture};
     target.draw(walls, states);
 }

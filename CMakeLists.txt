@@ -25,6 +25,8 @@ set(SOURCES
         editor.cpp
         ${IMGUI_SOURCES}
         ${IMGUI_SFML_SOURCES}
+        resources.cpp
+        resources.h
 )
 
 add_executable(raycaster ${SOURCES})

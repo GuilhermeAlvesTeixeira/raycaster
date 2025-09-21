@@ -9,6 +9,7 @@
 #include "map.h"
 #include "player.h"
 #include "renderer.h"
+#include "resources.h"
 
 int main() {
     sf::RenderWindow window(sf::VideoMode(SCREEN_W,SCREEN_H), "Raycaster",
@@ -26,8 +27,13 @@ int main() {
     float cellSize = 48.0f;                         //Tamanho da célula
 
     Map map {cellSize};                              //Mapa
-    map.load("../map_bin.map");                 //carregar mapa
+    map.load("../map_bin.map");              //carregar mapa
 
+    std::string wall_path = "../wall_textures.png";
+
+    if (!Resources::wallTexture.loadFromFile(wall_path)) {
+        std::cerr << "Falha ao carregar" << wall_path << '\n';
+    }
     /**************************** GAME CLOCK **********************************/
 
     sf::Clock gameClock;                            //gameClock
